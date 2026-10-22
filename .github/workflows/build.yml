@@ -1,0 +1,29 @@
+name: Build AirFake
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Theos
+        uses: Randomblock1/theos-action@v1
+
+      - name: Build package
+        run: |
+          export THEOS=$GITHUB_WORKSPACE/theos
+          make clean package FINALPACKAGE=1
+
+      - name: Upload DEB
+        uses: actions/upload-artifact@v4
+        with:
+          name: AirFake-deb
+          path: packages/*.deb
