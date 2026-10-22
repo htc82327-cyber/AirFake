@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<array>
+    <dict>
+        <key>cell</key>
+        <string>PSGroupCell</string>
+        <key>label</key>
+        <string>AirFake 0.1</string>
+        <key>footerText</key>
+        <string>Первый прототип: показывает карточку при подключении Bluetooth-устройства, если его имя содержит заданное ключевое слово.</string>
+    </dict>
+
+    <dict>
+        <key>cell</key>
+        <string>PSSwitchCell</string>
+        <key>label</key>
+        <string>Включить AirFake</string>
+        <key>key</key>
+        <string>Enabled</string>
+        <key>default</key>
+        <true/>
+        <key>get</key>
+        <string>readPreferenceValue:</string>
+        <key>set</key>
+        <string>setPreferenceValue:specifier:</string>
+    </dict>
+
+    <dict>
+        <key>cell</key>
+        <string>PSEditTextCell</string>
+        <key>label</key>
+        <string>Искать в имени</string>
+        <key>key</key>
+        <string>Keyword</string>
+        <key>default</key>
+        <string>Soundcore</string>
+        <key>placeholder</key>
+        <string>Soundcore</string>
+        <key>get</key>
+        <string>readPreferenceValue:</string>
+        <key>set</key>
+        <string>setPreferenceValue:specifier:</string>
+    </dict>
+
+    <dict>
+        <key>cell</key>
+        <string>PSEditTextCell</string>
+        <key>label</key>
+        <string>Название на карточке</string>
+        <key>key</key>
+        <string>DisplayName</string>
+        <key>default</key>
+        <string>Soundcore</string>
+        <key>placeholder</key>
+        <string>Мои наушники</string>
+        <key>get</key>
+        <string>readPreferenceValue:</string>
+        <key>set</key>
+        <string>setPreferenceValue:specifier:</string>
+    </dict>
+
+    <dict>
+        <key>cell</key>
+        <string>PSGroupCell</string>
+        <key>label</key>
+        <string>Проверка</string>
+        <key>footerText</key>
+        <string>Кнопка ниже должна показать карточку сразу, даже без наушников. Это проверяет инжект в SpringBoard.</string>
+    </dict>
+
+    <dict>
+        <key>cell</key>
+        <string>PSButtonCell</string>
+        <key>label</key>
+        <string>Показать тестовую карточку</string>
+        <key>action</key>
+        <string>showTestPopup</string>
+    </dict>
+</array>
+</plist>
