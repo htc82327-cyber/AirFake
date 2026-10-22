@@ -1,11 +1,96 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0"><array>
-<dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>AirFake 0.2</string><key>footerText</key><string>Основные настройки доступны через иконку AirFake. Этот раздел оставлен как запасной способ вернуть скрытую иконку.</string></dict>
-<dict><key>cell</key><string>PSSwitchCell</string><key>label</key><string>Включить AirFake</string><key>key</key><string>Enabled</string><key>default</key><true/><key>get</key><string>readPreferenceValue:</string><key>set</key><string>setPreferenceValue:specifier:</string></dict>
-<dict><key>cell</key><string>PSEditTextCell</string><key>label</key><string>Искать в имени</string><key>key</key><string>Keyword</string><key>default</key><string>Soundcore</string><key>get</key><string>readPreferenceValue:</string><key>set</key><string>setPreferenceValue:specifier:</string></dict>
-<dict><key>cell</key><string>PSEditTextCell</string><key>label</key><string>Название на карточке</string><key>key</key><string>DisplayName</string><key>default</key><string>Soundcore</string><key>get</key><string>readPreferenceValue:</string><key>set</key><string>setPreferenceValue:specifier:</string></dict>
-<dict><key>cell</key><string>PSSwitchCell</string><key>label</key><string>Скрыть иконку AirFake</string><key>key</key><string>HideAppIcon</string><key>default</key><false/><key>get</key><string>readPreferenceValue:</string><key>set</key><string>setPreferenceValue:specifier:</string></dict>
-<dict><key>cell</key><string>PSGroupCell</string><key>footerText</key><string>После изменения видимости иконки сделай Respring.</string></dict>
-<dict><key>cell</key><string>PSButtonCell</string><key>label</key><string>Показать тестовую карточку</string><key>action</key><string>showTestPopup</string></dict>
-</array></plist>
+<plist version="1.0">
+<array>
+	<dict>
+		<key>cell</key>
+		<string>PSGroupCell</string>
+		<key>label</key>
+		<string>AirFake 0.2.1</string>
+		<key>footerText</key>
+		<string>Основные настройки доступны через иконку AirFake. Этот раздел нужен как запасной способ вернуть скрытую иконку.</string>
+	</dict>
+	<dict>
+		<key>cell</key>
+		<string>PSSwitchCell</string>
+		<key>label</key>
+		<string>Включить AirFake</string>
+		<key>key</key>
+		<string>Enabled</string>
+		<key>default</key>
+		<true/>
+		<key>get</key>
+		<string>readPreferenceValue:</string>
+		<key>set</key>
+		<string>setPreferenceValue:specifier:</string>
+	</dict>
+	<dict>
+		<key>cell</key>
+		<string>PSEditTextCell</string>
+		<key>label</key>
+		<string>Искать в имени</string>
+		<key>key</key>
+		<string>Keyword</string>
+		<key>default</key>
+		<string>Soundcore</string>
+		<key>placeholder</key>
+		<string>Soundcore</string>
+		<key>get</key>
+		<string>readPreferenceValue:</string>
+		<key>set</key>
+		<string>setPreferenceValue:specifier:</string>
+	</dict>
+	<dict>
+		<key>cell</key>
+		<string>PSEditTextCell</string>
+		<key>label</key>
+		<string>Название на карточке</string>
+		<key>key</key>
+		<string>DisplayName</string>
+		<key>default</key>
+		<string>Soundcore</string>
+		<key>placeholder</key>
+		<string>Мои наушники</string>
+		<key>get</key>
+		<string>readPreferenceValue:</string>
+		<key>set</key>
+		<string>setPreferenceValue:specifier:</string>
+	</dict>
+	<dict>
+		<key>cell</key>
+		<string>PSSwitchCell</string>
+		<key>label</key>
+		<string>Скрыть иконку AirFake</string>
+		<key>key</key>
+		<string>HideAppIcon</string>
+		<key>default</key>
+		<false/>
+		<key>get</key>
+		<string>readPreferenceValue:</string>
+		<key>set</key>
+		<string>setPreferenceValue:specifier:</string>
+	</dict>
+	<dict>
+		<key>cell</key>
+		<string>PSGroupCell</string>
+		<key>footerText</key>
+		<string>После изменения видимости иконки сделай Respring.</string>
+	</dict>
+	<dict>
+		<key>cell</key>
+		<string>PSButtonCell</string>
+		<key>label</key>
+		<string>Показать тестовую карточку</string>
+		<key>action</key>
+		<string>showTestPopup</string>
+	</dict>
+	<dict>
+		<key>cell</key>
+		<string>PSButtonCell</string>
+		<key>label</key>
+		<string>Сделать Respring</string>
+		<key>action</key>
+		<string>respring</string>
+	</dict>
+</array>
+</plist>

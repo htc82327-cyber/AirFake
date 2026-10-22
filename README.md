@@ -1,15 +1,22 @@
-# AirFake 0.2
+# AirFake 0.2.1
 
-Для iPhone X / iOS 16 / Dopamine rootless.
+Исправленная вторая версия для iPhone X / iOS 16 / Dopamine rootless.
 
-Новое в 0.2:
+## Что есть
 - отдельная иконка AirFake на рабочем столе;
-- настройки внутри приложения;
-- переключатель скрытия иконки (после Respring);
-- тестовая карточка из приложения;
-- исправленный rootless-путь PreferenceLoader без `/var/jb/var/jb`;
-- системный раздел AirFake оставлен как резервный способ вернуть скрытую иконку.
+- настройки прямо в приложении;
+- резервные настройки через PreferenceLoader;
+- поиск Bluetooth-устройства по подстроке имени, по умолчанию `Soundcore`;
+- регистр не важен: `Soundcore`, `soundcore`, `SOUNDCORE` совпадают;
+- тестовая карточка;
+- автоматическая проверка подключённых Bluetooth-устройств каждые 1.5 секунды как запасной способ, если приватное Bluetooth-уведомление iOS не сработает;
+- скрытие иконки AirFake после Respring;
+- Respring через Darwin notification в SpringBoard, без запуска `killall` из приложения.
 
-По умолчанию правило ищет `Soundcore` как подстроку без учёта регистра.
+## Если скрыли иконку
+Открой `Настройки iOS → AirFake`, выключи `Скрыть иконку AirFake`, затем нажми `Сделать Respring`.
 
-Сборка: GitHub Actions → Build AirFake → Artifacts → AirFake-deb.
+## Сборка
+Проект уже содержит `.github/workflows/build.yml`.
+Загрузи содержимое архива в корень репозитория GitHub и дождись Build AirFake.
+Готовый `.deb` будет в `Artifacts → AirFake-deb`.

@@ -1,23 +1,48 @@
 #import "AFRootViewController.h"
 #import <CoreFoundation/CoreFoundation.h>
-#import <spawn.h>
-#import <unistd.h>
-extern char **environ;
 
 static NSString * const AFPrefsDomain = @"com.x7.airfake";
 static NSString * const AFTestDarwinNotification = @"com.x7.airfake/test";
 static NSString * const AFPrefsChangedDarwinNotification = @"com.x7.airfake/preferences.changed";
+static NSString * const AFRespringDarwinNotification = @"com.x7.airfake/respring";
 
 static id AFReadPreference(NSString *key) {
-    CFPropertyListRef value = CFPreferencesCopyValue((__bridge CFStringRef)key, (__bridge CFStringRef)AFPrefsDomain, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+    CFPreferencesAppSynchronize((__bridge CFStringRef)AFPrefsDomain);
+
+    CFPropertyListRef value = CFPreferencesCopyValue(
+        (__bridge CFStringRef)key,
+        (__bridge CFStringRef)AFPrefsDomain,
+        kCFPreferencesCurrentUser,
+        kCFPreferencesAnyHost
+    );
+
     return value ? CFBridgingRelease(value) : nil;
 }
+
 static void AFWritePreference(NSString *key, id value) {
-    CFPreferencesSetValue((__bridge CFStringRef)key, (__bridge CFPropertyListRef)value, (__bridge CFStringRef)AFPrefsDomain, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-    CFPreferencesSynchronize((__bridge CFStringRef)AFPrefsDomain, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+    CFPreferencesSetValue(
+        (__bridge CFStringRef)key,
+        (__bridge CFPropertyListRef)value,
+        (__bridge CFStringRef)AFPrefsDomain,
+        kCFPreferencesCurrentUser,
+        kCFPreferencesAnyHost
+    );
+
+    CFPreferencesSynchronize(
+        (__bridge CFStringRef)AFPrefsDomain,
+        kCFPreferencesCurrentUser,
+        kCFPreferencesAnyHost
+    );
 }
+
 static void AFPostDarwin(NSString *name) {
-    CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), (__bridge CFStringRef)name, NULL, NULL, YES);
+    CFNotificationCenterPostNotification(
+        CFNotificationCenterGetDarwinNotifyCenter(),
+        (__bridge CFStringRef)name,
+        NULL,
+        NULL,
+        YES
+    );
 }
 
 @interface AFRootViewController () <UITextFieldDelegate>
@@ -32,57 +57,67 @@ static void AFPostDarwin(NSString *name) {
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+
     self.title = @"AirFake";
     self.view.backgroundColor = UIColor.systemGroupedBackgroundColor;
 
-    UIScrollView *scroll = [UIScrollView new];
-    scroll.translatesAutoresizingMaskIntoConstraints = NO;
-    [self.view addSubview:scroll];
+    UIScrollView *scrollView = [UIScrollView new];
+    scrollView.translatesAutoresizingMaskIntoConstraints = NO;
+    [self.view addSubview:scrollView];
+
     UIStackView *stack = [UIStackView new];
     stack.translatesAutoresizingMaskIntoConstraints = NO;
     stack.axis = UILayoutConstraintAxisVertical;
-    stack.spacing = 14;
-    stack.layoutMargins = UIEdgeInsetsMake(24, 18, 30, 18);
+    stack.spacing = 14.0;
+    stack.layoutMargins = UIEdgeInsetsMake(24.0, 18.0, 30.0, 18.0);
     stack.layoutMarginsRelativeArrangement = YES;
-    [scroll addSubview:stack];
+    [scrollView addSubview:stack];
 
     [NSLayoutConstraint activateConstraints:@[
-        [scroll.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor],
-        [scroll.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
-        [scroll.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
-        [scroll.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
-        [stack.topAnchor constraintEqualToAnchor:scroll.contentLayoutGuide.topAnchor],
-        [stack.leadingAnchor constraintEqualToAnchor:scroll.contentLayoutGuide.leadingAnchor],
-        [stack.trailingAnchor constraintEqualToAnchor:scroll.contentLayoutGuide.trailingAnchor],
-        [stack.bottomAnchor constraintEqualToAnchor:scroll.contentLayoutGuide.bottomAnchor],
-        [stack.widthAnchor constraintEqualToAnchor:scroll.frameLayoutGuide.widthAnchor]
+        [scrollView.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor],
+        [scrollView.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
+        [scrollView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
+        [scrollView.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
+
+        [stack.topAnchor constraintEqualToAnchor:scrollView.contentLayoutGuide.topAnchor],
+        [stack.leadingAnchor constraintEqualToAnchor:scrollView.contentLayoutGuide.leadingAnchor],
+        [stack.trailingAnchor constraintEqualToAnchor:scrollView.contentLayoutGuide.trailingAnchor],
+        [stack.bottomAnchor constraintEqualToAnchor:scrollView.contentLayoutGuide.bottomAnchor],
+        [stack.widthAnchor constraintEqualToAnchor:scrollView.frameLayoutGuide.widthAnchor]
     ]];
 
-    UIImageView *icon = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"AirFakeIcon"]];
+    UIImageView *icon =
+        [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"AirFakeIcon"]];
     icon.translatesAutoresizingMaskIntoConstraints = NO;
     icon.contentMode = UIViewContentModeScaleAspectFit;
-    icon.layer.cornerRadius = 22;
+    icon.layer.cornerRadius = 22.0;
     icon.layer.masksToBounds = YES;
-    [icon.widthAnchor constraintEqualToConstant:92].active = YES;
-    [icon.heightAnchor constraintEqualToConstant:92].active = YES;
-    UIView *holder = [UIView new];
-    [holder addSubview:icon];
+
     [NSLayoutConstraint activateConstraints:@[
-        [icon.centerXAnchor constraintEqualToAnchor:holder.centerXAnchor],
-        [icon.topAnchor constraintEqualToAnchor:holder.topAnchor],
-        [icon.bottomAnchor constraintEqualToAnchor:holder.bottomAnchor]
+        [icon.widthAnchor constraintEqualToConstant:92.0],
+        [icon.heightAnchor constraintEqualToConstant:92.0]
     ]];
-    [stack addArrangedSubview:holder];
+
+    UIView *iconHolder = [UIView new];
+    [iconHolder addSubview:icon];
+
+    [NSLayoutConstraint activateConstraints:@[
+        [icon.centerXAnchor constraintEqualToAnchor:iconHolder.centerXAnchor],
+        [icon.topAnchor constraintEqualToAnchor:iconHolder.topAnchor],
+        [icon.bottomAnchor constraintEqualToAnchor:iconHolder.bottomAnchor]
+    ]];
+
+    [stack addArrangedSubview:iconHolder];
 
     UILabel *title = [UILabel new];
-    title.text = @"AirFake 0.2";
-    title.font = [UIFont systemFontOfSize:28 weight:UIFontWeightBold];
+    title.text = @"AirFake 0.2.1";
+    title.font = [UIFont systemFontOfSize:28.0 weight:UIFontWeightBold];
     title.textAlignment = NSTextAlignmentCenter;
     [stack addArrangedSubview:title];
 
     UILabel *subtitle = [UILabel new];
     subtitle.text = @"AirPods-style popup для обычных Bluetooth-наушников";
-    subtitle.font = [UIFont systemFontOfSize:15];
+    subtitle.font = [UIFont systemFontOfSize:15.0];
     subtitle.textColor = UIColor.secondaryLabelColor;
     subtitle.numberOfLines = 0;
     subtitle.textAlignment = NSTextAlignmentCenter;
@@ -90,92 +125,194 @@ static void AFPostDarwin(NSString *name) {
 
     UIView *card = [UIView new];
     card.backgroundColor = UIColor.secondarySystemGroupedBackgroundColor;
-    card.layer.cornerRadius = 18;
+    card.layer.cornerRadius = 18.0;
+
     UIStackView *cardStack = [UIStackView new];
     cardStack.translatesAutoresizingMaskIntoConstraints = NO;
     cardStack.axis = UILayoutConstraintAxisVertical;
-    cardStack.spacing = 12;
+    cardStack.spacing = 12.0;
     [card addSubview:cardStack];
+
     [NSLayoutConstraint activateConstraints:@[
-        [cardStack.topAnchor constraintEqualToAnchor:card.topAnchor constant:16],
-        [cardStack.leadingAnchor constraintEqualToAnchor:card.leadingAnchor constant:16],
-        [cardStack.trailingAnchor constraintEqualToAnchor:card.trailingAnchor constant:-16],
-        [cardStack.bottomAnchor constraintEqualToAnchor:card.bottomAnchor constant:-16]
+        [cardStack.topAnchor constraintEqualToAnchor:card.topAnchor constant:16.0],
+        [cardStack.leadingAnchor constraintEqualToAnchor:card.leadingAnchor constant:16.0],
+        [cardStack.trailingAnchor constraintEqualToAnchor:card.trailingAnchor constant:-16.0],
+        [cardStack.bottomAnchor constraintEqualToAnchor:card.bottomAnchor constant:-16.0]
     ]];
 
     self.enabledSwitch = [UISwitch new];
-    [cardStack addArrangedSubview:[self switchRow:@"Включить AirFake" control:self.enabledSwitch]];
+    [cardStack addArrangedSubview:
+        [self switchRow:@"Включить AirFake" control:self.enabledSwitch]];
+
     [cardStack addArrangedSubview:[self smallLabel:@"Искать в имени Bluetooth"]];
     self.keywordField = [self textField:@"Soundcore"];
     [cardStack addArrangedSubview:self.keywordField];
+
     [cardStack addArrangedSubview:[self smallLabel:@"Название на карточке"]];
     self.displayNameField = [self textField:@"Soundcore"];
     [cardStack addArrangedSubview:self.displayNameField];
+
     self.hideIconSwitch = [UISwitch new];
-    [self.hideIconSwitch addTarget:self action:@selector(hideIconChanged:) forControlEvents:UIControlEventValueChanged];
-    [cardStack addArrangedSubview:[self switchRow:@"Скрыть иконку AirFake" control:self.hideIconSwitch]];
-    UILabel *hint = [self smallLabel:@"После скрытия вернуть иконку можно через Настройки iOS → AirFake. Для изменения видимости нужен Respring."];
+    [cardStack addArrangedSubview:
+        [self switchRow:@"Скрыть иконку AirFake" control:self.hideIconSwitch]];
+
+    UILabel *hint =
+        [self smallLabel:
+            @"Если скрыть иконку, вернуть её можно через Настройки iOS → AirFake. "
+             "После изменения видимости нажми «Применить и сделать Respring»."];
     hint.numberOfLines = 0;
     [cardStack addArrangedSubview:hint];
+
     [stack addArrangedSubview:card];
 
-    UIButton *save = [self button:@"Сохранить настройки" filled:YES];
-    [save addTarget:self action:@selector(saveTapped) forControlEvents:UIControlEventTouchUpInside];
-    [stack addArrangedSubview:save];
-    UIButton *test = [self button:@"Показать тестовую карточку" filled:NO];
-    [test addTarget:self action:@selector(testTapped) forControlEvents:UIControlEventTouchUpInside];
-    [stack addArrangedSubview:test];
-    UIButton *respring = [self button:@"Применить и сделать Respring" filled:NO];
-    [respring addTarget:self action:@selector(respringTapped) forControlEvents:UIControlEventTouchUpInside];
-    [stack addArrangedSubview:respring];
+    UIButton *saveButton = [self button:@"Сохранить настройки" filled:YES];
+    [saveButton addTarget:self
+                   action:@selector(saveTapped)
+         forControlEvents:UIControlEventTouchUpInside];
+    [stack addArrangedSubview:saveButton];
+
+    UIButton *testButton = [self button:@"Показать тестовую карточку" filled:NO];
+    [testButton addTarget:self
+                   action:@selector(testTapped)
+         forControlEvents:UIControlEventTouchUpInside];
+    [stack addArrangedSubview:testButton];
+
+    UIButton *respringButton =
+        [self button:@"Применить и сделать Respring" filled:NO];
+    [respringButton addTarget:self
+                       action:@selector(respringTapped)
+             forControlEvents:UIControlEventTouchUpInside];
+    [stack addArrangedSubview:respringButton];
 
     self.statusLabel = [UILabel new];
-    self.statusLabel.font = [UIFont systemFontOfSize:13];
+    self.statusLabel.font = [UIFont systemFontOfSize:13.0];
     self.statusLabel.textColor = UIColor.secondaryLabelColor;
     self.statusLabel.numberOfLines = 0;
     self.statusLabel.textAlignment = NSTextAlignmentCenter;
     [stack addArrangedSubview:self.statusLabel];
+
     [self loadPreferences];
 }
 
 - (UILabel *)smallLabel:(NSString *)text {
-    UILabel *l = [UILabel new]; l.text = text; l.font = [UIFont systemFontOfSize:13 weight:UIFontWeightMedium]; l.textColor = UIColor.secondaryLabelColor; return l;
+    UILabel *label = [UILabel new];
+    label.text = text;
+    label.font = [UIFont systemFontOfSize:13.0 weight:UIFontWeightMedium];
+    label.textColor = UIColor.secondaryLabelColor;
+    return label;
 }
+
 - (UITextField *)textField:(NSString *)placeholder {
-    UITextField *f = [UITextField new];
-    f.placeholder = placeholder; f.delegate = self; f.backgroundColor = UIColor.tertiarySystemGroupedBackgroundColor; f.layer.cornerRadius = 11; f.clearButtonMode = UITextFieldViewModeWhileEditing; f.returnKeyType = UIReturnKeyDone; f.autocorrectionType = UITextAutocorrectionTypeNo; f.autocapitalizationType = UITextAutocapitalizationTypeNone; f.font = [UIFont systemFontOfSize:16];
-    UIView *pad = [[UIView alloc] initWithFrame:CGRectMake(0,0,12,1)]; f.leftView = pad; f.leftViewMode = UITextFieldViewModeAlways; [f.heightAnchor constraintEqualToConstant:46].active = YES; return f;
+    UITextField *field = [UITextField new];
+    field.placeholder = placeholder;
+    field.delegate = self;
+    field.backgroundColor = UIColor.tertiarySystemGroupedBackgroundColor;
+    field.layer.cornerRadius = 11.0;
+    field.clearButtonMode = UITextFieldViewModeWhileEditing;
+    field.returnKeyType = UIReturnKeyDone;
+    field.autocorrectionType = UITextAutocorrectionTypeNo;
+    field.autocapitalizationType = UITextAutocapitalizationTypeNone;
+    field.font = [UIFont systemFontOfSize:16.0];
+
+    UIView *padding = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 12, 1)];
+    field.leftView = padding;
+    field.leftViewMode = UITextFieldViewModeAlways;
+
+    [field.heightAnchor constraintEqualToConstant:46.0].active = YES;
+    return field;
 }
+
 - (UIStackView *)switchRow:(NSString *)title control:(UISwitch *)control {
-    UILabel *label = [UILabel new]; label.text = title; label.font = [UIFont systemFontOfSize:16 weight:UIFontWeightMedium]; label.numberOfLines = 0;
-    UIStackView *row = [[UIStackView alloc] initWithArrangedSubviews:@[label, control]]; row.axis = UILayoutConstraintAxisHorizontal; row.alignment = UIStackViewAlignmentCenter; row.distribution = UIStackViewDistributionEqualSpacing; row.spacing = 10; return row;
+    UILabel *label = [UILabel new];
+    label.text = title;
+    label.font = [UIFont systemFontOfSize:16.0 weight:UIFontWeightMedium];
+    label.numberOfLines = 0;
+
+    UIStackView *row =
+        [[UIStackView alloc] initWithArrangedSubviews:@[label, control]];
+    row.axis = UILayoutConstraintAxisHorizontal;
+    row.alignment = UIStackViewAlignmentCenter;
+    row.distribution = UIStackViewDistributionEqualSpacing;
+    row.spacing = 10.0;
+    return row;
 }
+
 - (UIButton *)button:(NSString *)title filled:(BOOL)filled {
-    UIButton *b = [UIButton buttonWithType:UIButtonTypeSystem]; [b setTitle:title forState:UIControlStateNormal]; b.titleLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightSemibold]; b.layer.cornerRadius = 14; b.layer.masksToBounds = YES; b.contentEdgeInsets = UIEdgeInsetsMake(13,14,13,14);
-    if (filled) { b.backgroundColor = UIColor.systemBlueColor; [b setTitleColor:UIColor.whiteColor forState:UIControlStateNormal]; } else { b.backgroundColor = UIColor.secondarySystemGroupedBackgroundColor; }
-    return b;
+    UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
+    [button setTitle:title forState:UIControlStateNormal];
+    button.titleLabel.font =
+        [UIFont systemFontOfSize:16.0 weight:UIFontWeightSemibold];
+    button.layer.cornerRadius = 14.0;
+    button.layer.masksToBounds = YES;
+    button.contentEdgeInsets = UIEdgeInsetsMake(13.0, 14.0, 13.0, 14.0);
+
+    if (filled) {
+        button.backgroundColor = UIColor.systemBlueColor;
+        [button setTitleColor:UIColor.whiteColor forState:UIControlStateNormal];
+    } else {
+        button.backgroundColor = UIColor.secondarySystemGroupedBackgroundColor;
+    }
+
+    return button;
 }
+
 - (void)loadPreferences {
-    id enabled=AFReadPreference(@"Enabled"), keyword=AFReadPreference(@"Keyword"), display=AFReadPreference(@"DisplayName"), hide=AFReadPreference(@"HideAppIcon");
+    id enabled = AFReadPreference(@"Enabled");
+    id keyword = AFReadPreference(@"Keyword");
+    id displayName = AFReadPreference(@"DisplayName");
+    id hideIcon = AFReadPreference(@"HideAppIcon");
+
     self.enabledSwitch.on = enabled ? [enabled boolValue] : YES;
-    self.keywordField.text = [keyword isKindOfClass:[NSString class]] ? keyword : @"Soundcore";
-    self.displayNameField.text = [display isKindOfClass:[NSString class]] ? display : @"Soundcore";
-    self.hideIconSwitch.on = hide ? [hide boolValue] : NO;
+    self.keywordField.text =
+        [keyword isKindOfClass:[NSString class]] ? keyword : @"Soundcore";
+    self.displayNameField.text =
+        [displayName isKindOfClass:[NSString class]] ? displayName : @"Soundcore";
+    self.hideIconSwitch.on = hideIcon ? [hideIcon boolValue] : NO;
 }
+
 - (void)savePreferences {
-    NSString *keyword=[self.keywordField.text stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
-    NSString *display=[self.displayNameField.text stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
-    if (!keyword.length) keyword=@"Soundcore"; if (!display.length) display=keyword;
-    AFWritePreference(@"Enabled", @(self.enabledSwitch.isOn)); AFWritePreference(@"Keyword", keyword); AFWritePreference(@"DisplayName", display); AFWritePreference(@"HideAppIcon", @(self.hideIconSwitch.isOn)); AFPostDarwin(AFPrefsChangedDarwinNotification);
+    NSString *keyword =
+        [self.keywordField.text
+            stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
+
+    NSString *displayName =
+        [self.displayNameField.text
+            stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
+
+    if (keyword.length == 0) keyword = @"Soundcore";
+    if (displayName.length == 0) displayName = keyword;
+
+    AFWritePreference(@"Enabled", @(self.enabledSwitch.isOn));
+    AFWritePreference(@"Keyword", keyword);
+    AFWritePreference(@"DisplayName", displayName);
+    AFWritePreference(@"HideAppIcon", @(self.hideIconSwitch.isOn));
+
+    AFPostDarwin(AFPrefsChangedDarwinNotification);
 }
-- (void)saveTapped { [self.view endEditing:YES]; [self savePreferences]; self.statusLabel.text=@"Сохранено. Правила Bluetooth применяются сразу."; }
-- (void)testTapped { [self.view endEditing:YES]; [self savePreferences]; AFPostDarwin(AFTestDarwinNotification); self.statusLabel.text=@"Команда тестовой карточки отправлена в SpringBoard."; }
-- (void)hideIconChanged:(UISwitch *)sender { [self savePreferences]; self.statusLabel.text = sender.isOn ? @"Иконка будет скрыта после Respring." : @"Иконка вернётся после Respring."; }
+
+- (void)saveTapped {
+    [self.view endEditing:YES];
+    [self savePreferences];
+    self.statusLabel.text = @"Сохранено.";
+}
+
+- (void)testTapped {
+    [self.view endEditing:YES];
+    [self savePreferences];
+    AFPostDarwin(AFTestDarwinNotification);
+    self.statusLabel.text = @"Команда тестовой карточки отправлена в SpringBoard.";
+}
+
 - (void)respringTapped {
-    [self.view endEditing:YES]; [self savePreferences];
-    const char *paths[] = { "/var/jb/usr/bin/killall", "/usr/bin/killall", NULL };
-    for (int i=0; paths[i]; i++) if (access(paths[i], X_OK)==0) { pid_t pid=0; char * const args[]={(char*)"killall",(char*)"-9",(char*)"SpringBoard",NULL}; if (posix_spawn(&pid, paths[i], NULL, NULL, args, environ)==0) return; }
-    self.statusLabel.text=@"Авто-Respring не сработал. Сделай Respring через Dopamine/Sileo.";
+    [self.view endEditing:YES];
+    [self savePreferences];
+    self.statusLabel.text = @"Выполняется Respring…";
+    AFPostDarwin(AFRespringDarwinNotification);
 }
-- (BOOL)textFieldShouldReturn:(UITextField *)textField { [textField resignFirstResponder]; return YES; }
+
+- (BOOL)textFieldShouldReturn:(UITextField *)textField {
+    [textField resignFirstResponder];
+    return YES;
+}
+
 @end

@@ -1,10 +1,18 @@
 #import <UIKit/UIKit.h>
 #import <CoreFoundation/CoreFoundation.h>
 #import <objc/message.h>
+#import <signal.h>
+#import <unistd.h>
 
 static NSString * const AFPrefsDomain = @"com.x7.airfake";
 static NSString * const AFTestDarwinNotification = @"com.x7.airfake/test";
 static NSString * const AFPrefsChangedDarwinNotification = @"com.x7.airfake/preferences.changed";
+static NSString * const AFRespringDarwinNotification = @"com.x7.airfake/respring";
+
+@interface SBApplication : NSObject
+@property(nonatomic, readonly, retain) NSString *bundleIdentifier;
+@property(nonatomic, retain) NSArray *tags;
+@end
 
 static id AFSend0(id obj, SEL sel) {
     if (!obj || !sel || ![obj respondsToSelector:sel]) return nil;
@@ -30,7 +38,7 @@ static id AFReadPreference(NSString *key) {
 
 static NSString *AFReadStringPreference(NSString *key, NSString *fallback) {
     id obj = AFReadPreference(key);
-    if ([obj isKindOfClass:[NSString class]] && [obj length] > 0) return obj;
+    if ([obj isKindOfClass:[NSString class]] && [(NSString *)obj length] > 0) return obj;
     return fallback;
 }
 
@@ -38,6 +46,14 @@ static BOOL AFReadBoolPreference(NSString *key, BOOL fallback) {
     id obj = AFReadPreference(key);
     if ([obj respondsToSelector:@selector(boolValue)]) return [obj boolValue];
     return fallback;
+}
+
+static BOOL AFNameMatchesKeyword(NSString *name) {
+    if (name.length == 0) return NO;
+    NSString *keyword = AFReadStringPreference(@"Keyword", @"Soundcore");
+    if (keyword.length == 0) keyword = @"Soundcore";
+    return [name rangeOfString:keyword
+                      options:(NSCaseInsensitiveSearch | NSDiacriticInsensitiveSearch)].location != NSNotFound;
 }
 
 @interface AFPopupController : NSObject
@@ -55,19 +71,22 @@ static BOOL AFReadBoolPreference(NSString *key, BOOL fallback) {
 + (instancetype)shared {
     static AFPopupController *obj;
     static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{ obj = [AFPopupController new]; });
+    dispatch_once(&onceToken, ^{
+        obj = [AFPopupController new];
+    });
     return obj;
 }
 
 - (UIWindow *)makeWindow {
-    UIWindow *w = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
-    w.windowLevel = UIWindowLevelAlert + 120.0;
-    w.backgroundColor = UIColor.clearColor;
-    w.userInteractionEnabled = NO;
-    UIViewController *vc = [UIViewController new];
-    vc.view.backgroundColor = UIColor.clearColor;
-    w.rootViewController = vc;
-    return w;
+    UIWindow *window = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+    window.windowLevel = UIWindowLevelAlert + 120.0;
+    window.backgroundColor = UIColor.clearColor;
+    window.userInteractionEnabled = NO;
+
+    UIViewController *controller = [UIViewController new];
+    controller.view.backgroundColor = UIColor.clearColor;
+    window.rootViewController = controller;
+    return window;
 }
 
 - (UIView *)buildCardIn:(UIView *)host {
@@ -85,29 +104,34 @@ static BOOL AFReadBoolPreference(NSString *key, BOOL fallback) {
         [panel.heightAnchor constraintGreaterThanOrEqualToConstant:210.0]
     ]];
 
-    UIImageSymbolConfiguration *cfg = [UIImageSymbolConfiguration configurationWithPointSize:66 weight:UIImageSymbolWeightRegular];
-    UIImageView *img = [[UIImageView alloc] initWithImage:[UIImage systemImageNamed:@"headphones" withConfiguration:cfg]];
-    img.translatesAutoresizingMaskIntoConstraints = NO;
-    img.tintColor = UIColor.labelColor;
-    img.contentMode = UIViewContentModeScaleAspectFit;
-    [panel.contentView addSubview:img];
+    UIImageSymbolConfiguration *configuration =
+        [UIImageSymbolConfiguration configurationWithPointSize:66.0
+                                                        weight:UIImageSymbolWeightRegular];
+
+    UIImageView *image = [[UIImageView alloc] initWithImage:
+        [UIImage systemImageNamed:@"headphones" withConfiguration:configuration]];
+    image.translatesAutoresizingMaskIntoConstraints = NO;
+    image.tintColor = UIColor.labelColor;
+    image.contentMode = UIViewContentModeScaleAspectFit;
+    [panel.contentView addSubview:image];
 
     UILabel *title = [UILabel new];
     title.translatesAutoresizingMaskIntoConstraints = NO;
-    title.font = [UIFont systemFontOfSize:24 weight:UIFontWeightSemibold];
+    title.font = [UIFont systemFontOfSize:24.0 weight:UIFontWeightSemibold];
     title.textAlignment = NSTextAlignmentCenter;
     title.textColor = UIColor.labelColor;
+    title.numberOfLines = 1;
     [panel.contentView addSubview:title];
     self.titleLabel = title;
 
-    UILabel *sub = [UILabel new];
-    sub.translatesAutoresizingMaskIntoConstraints = NO;
-    sub.font = [UIFont systemFontOfSize:15 weight:UIFontWeightRegular];
-    sub.textAlignment = NSTextAlignmentCenter;
-    sub.textColor = UIColor.secondaryLabelColor;
-    sub.numberOfLines = 2;
-    [panel.contentView addSubview:sub];
-    self.subtitleLabel = sub;
+    UILabel *subtitle = [UILabel new];
+    subtitle.translatesAutoresizingMaskIntoConstraints = NO;
+    subtitle.font = [UIFont systemFontOfSize:15.0 weight:UIFontWeightRegular];
+    subtitle.textAlignment = NSTextAlignmentCenter;
+    subtitle.textColor = UIColor.secondaryLabelColor;
+    subtitle.numberOfLines = 2;
+    [panel.contentView addSubview:subtitle];
+    self.subtitleLabel = subtitle;
 
     UIView *dot = [UIView new];
     dot.translatesAutoresizingMaskIntoConstraints = NO;
@@ -117,27 +141,31 @@ static BOOL AFReadBoolPreference(NSString *key, BOOL fallback) {
 
     UILabel *status = [UILabel new];
     status.translatesAutoresizingMaskIntoConstraints = NO;
-    status.font = [UIFont systemFontOfSize:14 weight:UIFontWeightMedium];
+    status.font = [UIFont systemFontOfSize:14.0 weight:UIFontWeightMedium];
     status.textColor = UIColor.secondaryLabelColor;
     status.text = @"Bluetooth";
     [panel.contentView addSubview:status];
 
     [NSLayoutConstraint activateConstraints:@[
-        [img.topAnchor constraintEqualToAnchor:panel.contentView.topAnchor constant:22.0],
-        [img.centerXAnchor constraintEqualToAnchor:panel.contentView.centerXAnchor],
-        [img.widthAnchor constraintEqualToConstant:82.0],
-        [img.heightAnchor constraintEqualToConstant:82.0],
-        [title.topAnchor constraintEqualToAnchor:img.bottomAnchor constant:8.0],
+        [image.topAnchor constraintEqualToAnchor:panel.contentView.topAnchor constant:22.0],
+        [image.centerXAnchor constraintEqualToAnchor:panel.contentView.centerXAnchor],
+        [image.widthAnchor constraintEqualToConstant:82.0],
+        [image.heightAnchor constraintEqualToConstant:82.0],
+
+        [title.topAnchor constraintEqualToAnchor:image.bottomAnchor constant:8.0],
         [title.leadingAnchor constraintEqualToAnchor:panel.contentView.leadingAnchor constant:20.0],
         [title.trailingAnchor constraintEqualToAnchor:panel.contentView.trailingAnchor constant:-20.0],
-        [sub.topAnchor constraintEqualToAnchor:title.bottomAnchor constant:4.0],
-        [sub.leadingAnchor constraintEqualToAnchor:panel.contentView.leadingAnchor constant:20.0],
-        [sub.trailingAnchor constraintEqualToAnchor:panel.contentView.trailingAnchor constant:-20.0],
-        [dot.topAnchor constraintEqualToAnchor:sub.bottomAnchor constant:14.0],
+
+        [subtitle.topAnchor constraintEqualToAnchor:title.bottomAnchor constant:4.0],
+        [subtitle.leadingAnchor constraintEqualToAnchor:panel.contentView.leadingAnchor constant:20.0],
+        [subtitle.trailingAnchor constraintEqualToAnchor:panel.contentView.trailingAnchor constant:-20.0],
+
+        [dot.topAnchor constraintEqualToAnchor:subtitle.bottomAnchor constant:14.0],
         [dot.trailingAnchor constraintEqualToAnchor:status.leadingAnchor constant:-7.0],
         [dot.centerYAnchor constraintEqualToAnchor:status.centerYAnchor],
         [dot.widthAnchor constraintEqualToConstant:10.0],
         [dot.heightAnchor constraintEqualToConstant:10.0],
+
         [status.centerXAnchor constraintEqualToAnchor:panel.contentView.centerXAnchor constant:8.0],
         [status.bottomAnchor constraintEqualToAnchor:panel.contentView.bottomAnchor constant:-18.0]
     ]];
@@ -150,28 +178,30 @@ static BOOL AFReadBoolPreference(NSString *key, BOOL fallback) {
 
     dispatch_async(dispatch_get_main_queue(), ^{
         NSString *keyword = AFReadStringPreference(@"Keyword", @"Soundcore");
-        NSString *customTitle = AFReadStringPreference(@"DisplayName", @"Soundcore");
+        NSString *displayName = AFReadStringPreference(@"DisplayName", @"Soundcore");
 
-        if (!isTest) {
-            NSRange match = [deviceName rangeOfString:keyword options:NSCaseInsensitiveSearch | NSDiacriticInsensitiveSearch];
-            if (match.location == NSNotFound) return;
-        }
+        if (!isTest && !AFNameMatchesKeyword(deviceName)) return;
 
         if (!self.window) {
             self.window = [self makeWindow];
             self.card = [self buildCardIn:self.window.rootViewController.view];
         }
 
-        self.titleLabel.text = customTitle;
+        self.titleLabel.text = displayName;
         self.subtitleLabel.text = isTest
             ? [NSString stringWithFormat:@"Тестовая карточка • правило «%@»", keyword]
-            : [NSString stringWithFormat:@"%@ подключены", deviceName ?: customTitle];
+            : [NSString stringWithFormat:@"%@ подключены", deviceName.length ? deviceName : displayName];
 
         self.window.hidden = NO;
         self.card.alpha = 0.0;
-        self.card.transform = CGAffineTransformMakeTranslation(0, 28);
+        self.card.transform = CGAffineTransformMakeTranslation(0.0, 28.0);
 
-        [UIView animateWithDuration:0.30 delay:0 usingSpringWithDamping:0.84 initialSpringVelocity:0.45 options:UIViewAnimationOptionCurveEaseOut animations:^{
+        [UIView animateWithDuration:0.30
+                              delay:0.0
+             usingSpringWithDamping:0.84
+              initialSpringVelocity:0.45
+                            options:UIViewAnimationOptionCurveEaseOut
+                         animations:^{
             self.card.alpha = 1.0;
             self.card.transform = CGAffineTransformIdentity;
         } completion:nil];
@@ -184,117 +214,223 @@ static BOOL AFReadBoolPreference(NSString *key, BOOL fallback) {
         dispatch_block_t block = dispatch_block_create((dispatch_block_flags_t)0, ^{
             [UIView animateWithDuration:0.22 animations:^{
                 self.card.alpha = 0.0;
-                self.card.transform = CGAffineTransformMakeTranslation(0, 24);
-            } completion:^(BOOL finished) {
+                self.card.transform = CGAffineTransformMakeTranslation(0.0, 24.0);
+            } completion:^(__unused BOOL finished) {
                 self.window.hidden = YES;
                 self.card.transform = CGAffineTransformIdentity;
             }];
         });
 
         self.pendingHide = block;
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), block);
+        dispatch_after(
+            dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5.0 * NSEC_PER_SEC)),
+            dispatch_get_main_queue(),
+            block
+        );
     });
 }
 
 @end
 
-static NSString *AFDeviceNameFromNotification(NSNotification *note) {
-    id candidate = note.object;
-    if (!candidate && [note.userInfo isKindOfClass:[NSDictionary class]]) {
-        candidate = note.userInfo[@"device"] ?: note.userInfo[@"Device"] ?: note.userInfo[@"BluetoothDevice"];
-    }
-    for (NSString *selName in @[@"name", @"displayName", @"address"]) {
-        id value = AFSend0(candidate, NSSelectorFromString(selName));
-        NSString *text = AFStringFromPossibleValue(value);
-        if (text.length > 0) return text;
-    }
-    return nil;
-}
-
 static NSArray *AFConnectedDevices(void) {
     Class managerClass = NSClassFromString(@"BluetoothManager");
     if (!managerClass) return @[];
+
     id manager = AFSend0(managerClass, NSSelectorFromString(@"sharedInstance"));
     if (!manager) return @[];
+
     id devices = AFSend0(manager, NSSelectorFromString(@"connectedDevices"));
     return [devices isKindOfClass:[NSArray class]] ? devices : @[];
 }
 
+static NSString *AFNameForBluetoothDevice(id device) {
+    if (!device) return nil;
+
+    for (NSString *selectorName in @[@"name", @"displayName"]) {
+        NSString *value = AFStringFromPossibleValue(
+            AFSend0(device, NSSelectorFromString(selectorName))
+        );
+        if (value.length > 0) return value;
+    }
+
+    return nil;
+}
+
 static NSString *AFFirstMatchingConnectedDevice(void) {
-    NSString *keyword = AFReadStringPreference(@"Keyword", @"Soundcore");
     for (id device in AFConnectedDevices()) {
-        NSString *name = nil;
-        for (NSString *selName in @[@"name", @"displayName"]) {
-            name = AFStringFromPossibleValue(AFSend0(device, NSSelectorFromString(selName)));
-            if (name.length > 0) break;
-        }
-        if (name.length > 0 && [name rangeOfString:keyword options:NSCaseInsensitiveSearch | NSDiacriticInsensitiveSearch].location != NSNotFound) return name;
+        NSString *name = AFNameForBluetoothDevice(device);
+        if (AFNameMatchesKeyword(name)) return name;
     }
     return nil;
 }
 
 @interface AFObserver : NSObject
+@property(nonatomic,strong) NSString *lastMatchedDeviceName;
+@property(nonatomic,strong) dispatch_source_t pollTimer;
 + (instancetype)shared;
 - (void)start;
+- (void)checkConnectedDevices;
 @end
 
 @implementation AFObserver
+
 + (instancetype)shared {
     static AFObserver *obj;
     static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{ obj = [AFObserver new]; });
+    dispatch_once(&onceToken, ^{
+        obj = [AFObserver new];
+    });
     return obj;
 }
+
 - (void)start {
-    NSNotificationCenter *nc = [NSNotificationCenter defaultCenter];
-    for (NSString *name in @[@"BluetoothDeviceConnectSuccessNotification", @"BluetoothDeviceConnectionChangedNotification", @"BluetoothDeviceConnectedNotification", @"BluetoothConnectionStatusChangedNotification"]) {
-        [nc addObserver:self selector:@selector(bluetoothChanged:) name:name object:nil];
+    NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
+
+    for (NSString *name in @[
+        @"BluetoothDeviceConnectSuccessNotification",
+        @"BluetoothDeviceConnectionChangedNotification",
+        @"BluetoothDeviceConnectedNotification",
+        @"BluetoothConnectionStatusChangedNotification"
+    ]) {
+        [center addObserver:self
+                   selector:@selector(bluetoothChanged:)
+                       name:name
+                     object:nil];
     }
+
     Class managerClass = NSClassFromString(@"BluetoothManager");
     AFSend0(managerClass, NSSelectorFromString(@"sharedInstance"));
+
+    if (!self.pollTimer) {
+        dispatch_source_t timer =
+            dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
+
+        if (timer) {
+            dispatch_source_set_timer(
+                timer,
+                dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.5 * NSEC_PER_SEC)),
+                (uint64_t)(1.5 * NSEC_PER_SEC),
+                (uint64_t)(0.2 * NSEC_PER_SEC)
+            );
+
+            __weak AFObserver *weakSelf = self;
+            dispatch_source_set_event_handler(timer, ^{
+                [weakSelf checkConnectedDevices];
+            });
+
+            self.pollTimer = timer;
+            dispatch_resume(timer);
+        }
+    }
 }
-- (void)bluetoothChanged:(NSNotification *)note {
-    if (!AFReadBoolPreference(@"Enabled", YES)) return;
-    NSString *name = AFDeviceNameFromNotification(note);
-    if (name.length == 0) name = AFFirstMatchingConnectedDevice();
-    if (name.length > 0) [[AFPopupController shared] showDeviceName:name test:NO];
+
+- (void)bluetoothChanged:(__unused NSNotification *)note {
+    [self checkConnectedDevices];
 }
+
+- (void)checkConnectedDevices {
+    if (!AFReadBoolPreference(@"Enabled", YES)) {
+        self.lastMatchedDeviceName = nil;
+        return;
+    }
+
+    NSString *current = AFFirstMatchingConnectedDevice();
+
+    if (current.length == 0) {
+        self.lastMatchedDeviceName = nil;
+        return;
+    }
+
+    if (![self.lastMatchedDeviceName isEqualToString:current]) {
+        self.lastMatchedDeviceName = current;
+        [[AFPopupController shared] showDeviceName:current test:NO];
+    }
+}
+
 @end
 
 %hook SBApplication
+
 - (NSArray *)tags {
     NSArray *originalTags = %orig;
-    NSString *bundleID = nil;
-    SEL bundleSelector = NSSelectorFromString(@"bundleIdentifier");
-    if ([self respondsToSelector:bundleSelector]) bundleID = ((id (*)(id, SEL))objc_msgSend)(self, bundleSelector);
-    if (![bundleID isEqualToString:@"com.x7.airfakeapp"]) return originalTags;
 
-    NSMutableArray *tags = originalTags ? [originalTags mutableCopy] : [NSMutableArray array];
-    BOOL hideIcon = AFReadBoolPreference(@"HideAppIcon", NO);
-    if (hideIcon) {
-        if (![tags containsObject:@"hidden"]) [tags addObject:@"hidden"];
-    } else {
-        [tags removeObject:@"hidden"];
+    if (![[self bundleIdentifier] isEqualToString:@"com.x7.airfakeapp"]) {
+        return originalTags;
     }
-    return tags;
+
+    BOOL hideIcon = AFReadBoolPreference(@"HideAppIcon", NO);
+    BOOL alreadyHidden = [originalTags containsObject:@"hidden"];
+
+    if (hideIcon == alreadyHidden) {
+        return originalTags;
+    }
+
+    NSMutableArray *updated =
+        originalTags ? [originalTags mutableCopy] : [NSMutableArray array];
+
+    if (hideIcon) {
+        [updated addObject:@"hidden"];
+    } else {
+        [updated removeObject:@"hidden"];
+    }
+
+    return [updated copy];
 }
+
 %end
 
-static void AFDarwinCallback(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo) {
+static void AFDarwinCallback(
+    __unused CFNotificationCenterRef center,
+    __unused void *observer,
+    CFStringRef name,
+    __unused const void *object,
+    __unused CFDictionaryRef userInfo
+) {
     NSString *notification = (__bridge NSString *)name;
+
     if ([notification isEqualToString:AFTestDarwinNotification]) {
         [[AFPopupController shared] showDeviceName:@"Soundcore Test" test:YES];
-    } else if ([notification isEqualToString:AFPrefsChangedDarwinNotification]) {
+        return;
+    }
+
+    if ([notification isEqualToString:AFPrefsChangedDarwinNotification]) {
         CFPreferencesAppSynchronize((__bridge CFStringRef)AFPrefsDomain);
+        [[AFObserver shared] checkConnectedDevices];
+        return;
+    }
+
+    if ([notification isEqualToString:AFRespringDarwinNotification]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            kill(getpid(), SIGTERM);
+        });
     }
 }
 
 %ctor {
     @autoreleasepool {
-        if (![[NSProcessInfo processInfo].processName isEqualToString:@"SpringBoard"]) return;
+        if (![[NSProcessInfo processInfo].processName isEqualToString:@"SpringBoard"]) {
+            return;
+        }
+
         CFNotificationCenterRef darwin = CFNotificationCenterGetDarwinNotifyCenter();
-        CFNotificationCenterAddObserver(darwin, NULL, AFDarwinCallback, (__bridge CFStringRef)AFTestDarwinNotification, NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
-        CFNotificationCenterAddObserver(darwin, NULL, AFDarwinCallback, (__bridge CFStringRef)AFPrefsChangedDarwinNotification, NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
-        dispatch_async(dispatch_get_main_queue(), ^{ [[AFObserver shared] start]; });
+
+        for (NSString *name in @[
+            AFTestDarwinNotification,
+            AFPrefsChangedDarwinNotification,
+            AFRespringDarwinNotification
+        ]) {
+            CFNotificationCenterAddObserver(
+                darwin,
+                NULL,
+                AFDarwinCallback,
+                (__bridge CFStringRef)name,
+                NULL,
+                CFNotificationSuspensionBehaviorDeliverImmediately
+            );
+        }
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [[AFObserver shared] start];
+        });
     }
 }

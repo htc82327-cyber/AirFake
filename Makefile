@@ -9,7 +9,7 @@ AirFake_FILES = Tweak.xm
 AirFake_CFLAGS = -fobjc-arc
 AirFake_FRAMEWORKS = UIKit CoreFoundation
 
-INSTALL_TARGET_PROCESSES = SpringBoard Preferences
+INSTALL_TARGET_PROCESSES = SpringBoard
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 
