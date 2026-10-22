@@ -13,5 +13,6 @@ INSTALL_TARGET_PROCESSES = SpringBoard Preferences
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 
+SUBPROJECTS += airfakeapp
 SUBPROJECTS += airfakeprefs
 include $(THEOS_MAKE_PATH)/aggregate.mk

@@ -1,9 +1,9 @@
 Package: com.x7.airfake
 Name: AirFake
-Version: 0.1.0
+Version: 0.2.0
 Architecture: iphoneos-arm64
-Description: AirPods-style popup for ordinary Bluetooth headphones.
+Description: AirPods-style popup and standalone settings app for ordinary Bluetooth headphones.
 Maintainer: X7
 Author: X7
 Section: Tweaks
-Depends: firmware (>= 15.0), preferenceloader
+Depends: firmware (>= 15.0)
